@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
-import { Text, View, Button, StyleSheet } from 'react-native';
+import { Text, View, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { TabNavigator, TabBarBottom } from 'react-navigation';
-import { Constants, Accelerometer } from 'expo';
-import { SensorManager } from 'NativeModules'
-import { DeviceEventEmitter } from 'react-native';
+import { Constants, Accelerometer, Gyroscope } from 'expo';
 
 class GpsScreen extends React.Component {
 
@@ -177,57 +175,76 @@ class AccelerometerScreen extends React.Component {
   render() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Accelerometer!</Text>
-        <Text>
-          x = {this.state.accelerometerData.x.toFixed(2)}{', '}
-        </Text>
-        <Text>
-          y = {this.state.accelerometerData.y.toFixed(2)}{', '}
-        </Text>
-        <Text>
-          z = {this.state.accelerometerData.z.toFixed(2)}
-        </Text>
+        <Text>Accelerometer:</Text>
+        <View style={styles.sensor}>
+          <Text>
+            x: {this.state.accelerometerData.x.toFixed(4)}
+          </Text>
+          <Text>
+            y: {this.state.accelerometerData.y.toFixed(4)}
+          </Text>
+          <Text>
+            z: {this.state.accelerometerData.z.toFixed(4)}
+          </Text>
+        </View>
       </View>
     );
   }
 }
 
-class CompassScreen extends React.Component {
+class GyroscopeScreen extends React.Component {
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      x: 0,
-      y: 0,
-      z: 0,
-    };
+  state = {
+    gyroscopeData: {},
   }
 
-  // componentDidMount() {
+  componentDidMount() {
+    this._toggle();
+    Gyroscope.setUpdateInterval(100);
+  }
 
-  //   DeviceEventEmitter.addListener('Accelerometer', function (data) {
-  //     etState = {
-  //       x: data.x,
-  //       y: data.y,
-  //       z: data.z
-  //     }
-  //   });
-  //   SensorManager.startAccelerometer(100);
-  // }
+  componentWillUnmount() {
+    this._unsubscribe();
+  }
 
-  // componentWillUnmount() {
-  //   SensorManager.stopAccelerometer();
-  // }
+  _toggle = () => {
+    if (this._subscription) {
+      this._unsubscribe();
+    } else {
+      this._subscribe();
+    }
+  }
+
+  _subscribe = () => {
+    this._subscription = Gyroscope.addListener((result) => {
+      this.setState({gyroscopeData: result});
+    });
+  }
+
+  _unsubscribe = () => {
+    this._subscription && this._subscription.remove();
+    this._subscription = null;
+  }
+
+  round(n) {
+    if (!n) {
+      return 0;
+    }
+  
+    return Math.floor(n * 100) / 100;
+  }
 
 
   render() {
+    let { x, y, z } = this.state.gyroscopeData;
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Compass!</Text>
-        <Text>{this.state.x}</Text>
-        <Text>{this.state.y}</Text>
-        <Text>{this.state.z}</Text>
+        <View style={styles.sensor}>
+          <Text>Gyroscope:</Text>
+          <Text>x: {this.round(x)}</Text>
+          <Text>y: {this.round(y)}</Text>
+          <Text>z: {this.round(z)}</Text>
+        </View>
       </View>
     );
   }
@@ -237,7 +254,7 @@ export default TabNavigator(
   {
     GPS: { screen: GpsScreen },
     Accelerometer: { screen: AccelerometerScreen },
-    Compass: { screen: CompassScreen },
+    Gyroscope: { screen: GyroscopeScreen },
   },
   {
     navigationOptions: ({ navigation }) => ({
@@ -248,8 +265,8 @@ export default TabNavigator(
           iconName = `ios-locate${focused ? '' : '-outline'}`;
         } else if (routeName === 'Accelerometer') {
           iconName = `ios-speedometer${focused ? '' : '-outline'}`;
-        } else if (routeName === 'Compass') {
-          iconName = `ios-compass${focused ? '' : '-outline'}`;
+        } else if (routeName === 'Gyroscope') {
+          iconName = `ios-analytics${focused ? '' : '-outline'}`;
         }
 
         // You can return any component that you like here! We usually use an
