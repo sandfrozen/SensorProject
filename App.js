@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { Text, View, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { TabNavigator, TabBarBottom } from 'react-navigation';
-import { Constants, Accelerometer, Gyroscope } from 'expo';
+import { TabNavigator, TabBarBottom, TabBarTop } from 'react-navigation';
+import { Constants, Accelerometer, Gyroscope, Location, Permissions } from 'expo';
 
 class GpsScreen extends React.Component {
 
@@ -10,8 +10,9 @@ class GpsScreen extends React.Component {
     super(props);
 
     this.state = {
-      latitude: null,
-      longitude: null,
+      latitude: 0,
+      longitude: 0,
+      altitude: 0,
       error: null,
     };
   }
@@ -46,8 +47,10 @@ class GpsScreen extends React.Component {
         this.setState({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
+          altitude: position.coords.altitude,
           error: null,
         });
+        //console.log("Auto GPS:\n" + JSON.stringify(position.coords))
       },
       (error) => this.setState({ error: error.message }),
       { enableHighAccuracy: true, timeout: 2000, maximumAge: 0 },
@@ -66,6 +69,7 @@ class GpsScreen extends React.Component {
           longitude: position.coords.longitude,
           error: null,
         });
+        //console.log("Manual GPS:\n" + JSON.stringify(position.coords))
       },
       (error) => this.setState({ error: error.message }),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
@@ -81,7 +85,7 @@ class GpsScreen extends React.Component {
         <View style={styles.container}>
           <View style={styles.sideContainer}>
             <Text>Latitude:</Text>
-            <Text>{this.state.latitude}</Text>
+            <Text>{this.state.longitude}</Text>
             <Text>{this.convertLat(this.state.latitude)}</Text>
           </View>
           <View style={styles.sideContainer}>
@@ -90,7 +94,7 @@ class GpsScreen extends React.Component {
             <Text>{this.convertLon(this.state.longitude)}</Text>
           </View>
         </View>
-
+        <Text>Alti: {this.state.altitude.toFixed(1)} m.</Text>
 
         <View style={styles.bottomContainer}>
           <Button title="Refresh GPS"
@@ -144,10 +148,6 @@ const styles = StyleSheet.create({
   },
 })
 
-
-
-
-
 class AccelerometerScreen extends React.Component {
   state = {
     accelerometerData: { x: 0, y: 0, z: 0 }
@@ -178,13 +178,13 @@ class AccelerometerScreen extends React.Component {
         <Text>Accelerometer:</Text>
         <View style={styles.sensor}>
           <Text>
-            x: {this.state.accelerometerData.x.toFixed(4)}
+            x: {this.state.accelerometerData.x.toFixed(1)}
           </Text>
           <Text>
-            y: {this.state.accelerometerData.y.toFixed(4)}
+            y: {this.state.accelerometerData.y.toFixed(1)}
           </Text>
           <Text>
-            z: {this.state.accelerometerData.z.toFixed(4)}
+            z: {this.state.accelerometerData.z.toFixed(1)}
           </Text>
         </View>
       </View>
@@ -217,7 +217,7 @@ class GyroscopeScreen extends React.Component {
 
   _subscribe = () => {
     this._subscription = Gyroscope.addListener((result) => {
-      this.setState({gyroscopeData: result});
+      this.setState({ gyroscopeData: result });
     });
   }
 
@@ -230,8 +230,8 @@ class GyroscopeScreen extends React.Component {
     if (!n) {
       return 0;
     }
-  
-    return Math.floor(n * 100) / 100;
+
+    return Math.floor(n * 10) / 10;
   }
 
 
@@ -239,12 +239,44 @@ class GyroscopeScreen extends React.Component {
     let { x, y, z } = this.state.gyroscopeData;
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Gyroscope:</Text>
         <View style={styles.sensor}>
-          <Text>Gyroscope:</Text>
           <Text>x: {this.round(x)}</Text>
           <Text>y: {this.round(y)}</Text>
           <Text>z: {this.round(z)}</Text>
         </View>
+      </View>
+    );
+  }
+}
+
+const degree_update_rate = 3;
+
+class CompassScreen extends Component {
+  state = {
+    magHeading: 0,
+    trueHeading: 0,
+  };
+
+  componentDidMount() {
+    Location.watchHeadingAsync((heading) => {
+      this.setState({
+        magHeading: heading.magHeading,
+        trueHeading: heading.trueHeading,
+      });
+    });
+  }
+
+  render() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Compass:</Text>
+        <Text>
+          {this.state.magHeading.toFixed(1)}
+        </Text>
+        <Text>
+          {this.state.trueHeading.toFixed(1)}
+        </Text>
       </View>
     );
   }
@@ -255,6 +287,7 @@ export default TabNavigator(
     GPS: { screen: GpsScreen },
     Accelerometer: { screen: AccelerometerScreen },
     Gyroscope: { screen: GyroscopeScreen },
+    Compass: { screen: CompassScreen },
   },
   {
     navigationOptions: ({ navigation }) => ({
@@ -267,6 +300,8 @@ export default TabNavigator(
           iconName = `ios-speedometer${focused ? '' : '-outline'}`;
         } else if (routeName === 'Gyroscope') {
           iconName = `ios-analytics${focused ? '' : '-outline'}`;
+        } else if (routeName === 'Compass') {
+          iconName = `ios-compass${focused ? '' : '-outline'}`;
         }
 
         // You can return any component that you like here! We usually use an
@@ -280,8 +315,8 @@ export default TabNavigator(
     },
     tabBarComponent: TabBarBottom,
     tabBarPosition: 'bottom',
-    animationEnabled: false,
-    swipeEnabled: false,
+    animationEnabled: true,
+    swipeEnabled: true,
   }
 
 );
