@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Text, View, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, View, Button, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { TabNavigator, TabBarBottom, TabBarTop } from 'react-navigation';
 import { Constants, Accelerometer, Gyroscope, Location, Permissions } from 'expo';
@@ -256,11 +256,14 @@ class CompassScreen extends Component {
   state = {
     magHeading: 0,
     trueHeading: 0,
+    magnetic: '45deg',
   };
 
   componentDidMount() {
     Location.watchHeadingAsync((heading) => {
       this.setState({
+        magnetic: 360 - heading.magHeading.toFixed(0) + 'deg',
+        true: 360 - heading.trueHeading.toFixed(0) + 'deg',
         magHeading: heading.magHeading,
         trueHeading: heading.trueHeading,
       });
@@ -268,14 +271,29 @@ class CompassScreen extends Component {
   }
 
   render() {
+    const compassAsView = {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      borderTopLeftRadius: 0,
+      borderRightColor: 'blue',
+      borderBottomRightRadius: 0,
+      borderRightWidth: 50,
+      backgroundColor: 'red',
+      transform: [{ rotateZ: this.state.magnetic}, {rotateY: '75deg' }, {rotateX: '75deg' }],
+    }
+    const imagedCompass = {
+      width: 350,
+      height: 350,
+      borderRadius: 175,
+      transform: [{ rotateZ: this.state.magnetic} ],
+    }
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Image source={require('./unnamed-3.png')} resizeMode='contain' style={imagedCompass} />
         <Text>Compass:</Text>
         <Text>
-          {this.state.magHeading.toFixed(1)}
-        </Text>
-        <Text>
-          {this.state.trueHeading.toFixed(1)}
+          {this.state.magHeading.toFixed(2)}
         </Text>
       </View>
     );
@@ -288,6 +306,9 @@ export default TabNavigator(
     Accelerometer: { screen: AccelerometerScreen },
     Gyroscope: { screen: GyroscopeScreen },
     Compass: { screen: CompassScreen },
+  },
+  {
+    initialRouteName: 'Compass',
   },
   {
     navigationOptions: ({ navigation }) => ({
@@ -320,3 +341,14 @@ export default TabNavigator(
   }
 
 );
+
+const styleC = StyleSheet.create({
+  compass: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderTopLeftRadius: 0,
+    backgroundColor: 'red',
+  },
+
+});
